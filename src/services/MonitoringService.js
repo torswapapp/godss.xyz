@@ -1,10 +1,15 @@
 import { Analytics } from '@vercel/analytics/react';
 import { inject } from '@vercel/analytics';
 import * as Sentry from '@sentry/react';
+import { WebSocket } from 'ws';
 
 class MonitoringService {
     constructor() {
         this.isInitialized = false;
+        this.subscribers = new Set();
+        this.ws = null;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
     }
 
     initialize() {
@@ -67,6 +72,40 @@ class MonitoringService {
 
     static logMetric(name, value) {
         // Send to your metrics service
+    }
+
+    connect() {
+        this.ws = new WebSocket(process.env.REACT_APP_WS_PROVIDER_URL);
+        
+        this.ws.on('open', () => {
+            console.log('WebSocket connected');
+            this.reconnectAttempts = 0;
+            this.subscribe();
+        });
+
+        this.ws.on('message', (data) => {
+            this.handleMessage(JSON.parse(data));
+        });
+
+        this.ws.on('close', () => {
+            if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                setTimeout(() => this.connect(), 1000 * Math.pow(2, this.reconnectAttempts));
+                this.reconnectAttempts++;
+            }
+        });
+    }
+
+    handleMessage(data) {
+        // Process incoming data and notify subscribers
+        this.subscribers.forEach(callback => callback(data));
+    }
+
+    subscribe(callback) {
+        this.subscribers.add(callback);
+    }
+
+    unsubscribe(callback) {
+        this.subscribers.delete(callback);
     }
 }
 

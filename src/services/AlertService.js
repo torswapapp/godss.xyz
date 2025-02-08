@@ -1,44 +1,99 @@
 class AlertService {
-    static async sendAlert(type, message, data = {}) {
-        if (process.env.NODE_ENV === 'production') {
-            try {
-                await fetch(process.env.REACT_APP_ALERT_WEBHOOK, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        type,
-                        message,
-                        data,
-                        timestamp: new Date().toISOString()
-                    })
-                });
-            } catch (error) {
-                console.error('Failed to send alert:', error);
-            }
+    constructor() {
+        this.subscribers = new Set();
+        this.alertHistory = [];
+        this.thresholds = {
+            profitThreshold: parseFloat(process.env.REACT_APP_MIN_PROFIT_THRESHOLD),
+            gasThreshold: parseFloat(process.env.REACT_APP_MAX_GAS_PRICE),
+            slippageThreshold: 3, // 3%
+            latencyThreshold: 1000 // 1 second
+        };
+    }
+
+    setThreshold(type, value) {
+        this.thresholds[type] = value;
+    }
+
+    subscribe(callback) {
+        this.subscribers.add(callback);
+        return () => this.subscribers.delete(callback);
+    }
+
+    notify(alert) {
+        const alertWithTimestamp = {
+            ...alert,
+            timestamp: Date.now()
+        };
+
+        this.alertHistory.push(alertWithTimestamp);
+        this.subscribers.forEach(callback => callback(alertWithTimestamp));
+
+        // Keep last 100 alerts
+        if (this.alertHistory.length > 100) {
+            this.alertHistory.shift();
         }
     }
 
-    static checkThresholds(metrics) {
-        const thresholds = {
-            cpu: parseInt(process.env.REACT_APP_ALERT_THRESHOLD_CPU),
-            memory: parseInt(process.env.REACT_APP_ALERT_THRESHOLD_MEMORY),
-            errorRate: parseInt(process.env.REACT_APP_ALERT_THRESHOLD_ERROR_RATE)
-        };
-
-        if (metrics.cpu > thresholds.cpu) {
-            this.sendAlert('warning', 'High CPU usage', { value: metrics.cpu });
+    checkProfitOpportunity(opportunity) {
+        if (opportunity.expectedProfit > this.thresholds.profitThreshold) {
+            this.notify({
+                type: 'PROFIT_OPPORTUNITY',
+                severity: 'success',
+                title: 'Profitable Trade Opportunity',
+                message: `Expected profit: ${opportunity.expectedProfit} ETH`,
+                data: opportunity
+            });
         }
+    }
 
-        if (metrics.memory > thresholds.memory) {
-            this.sendAlert('warning', 'High memory usage', { value: metrics.memory });
+    checkGasPrice(gasPrice) {
+        if (gasPrice > this.thresholds.gasThreshold) {
+            this.notify({
+                type: 'HIGH_GAS',
+                severity: 'warning',
+                title: 'High Gas Price',
+                message: `Current gas price: ${gasPrice} Gwei`,
+                data: { gasPrice }
+            });
         }
+    }
 
-        if (metrics.errorRate > thresholds.errorRate) {
-            this.sendAlert('error', 'High error rate', { value: metrics.errorRate });
+    checkSlippage(expectedPrice, actualPrice, pair) {
+        const slippage = Math.abs((actualPrice - expectedPrice) / expectedPrice * 100);
+        if (slippage > this.thresholds.slippageThreshold) {
+            this.notify({
+                type: 'HIGH_SLIPPAGE',
+                severity: 'warning',
+                title: 'High Slippage Detected',
+                message: `${slippage.toFixed(2)}% slippage for ${pair}`,
+                data: { expectedPrice, actualPrice, slippage }
+            });
         }
+    }
+
+    checkNetworkLatency(latency) {
+        if (latency > this.thresholds.latencyThreshold) {
+            this.notify({
+                type: 'HIGH_LATENCY',
+                severity: 'error',
+                title: 'Network Latency Issue',
+                message: `High latency detected: ${latency}ms`,
+                data: { latency }
+            });
+        }
+    }
+
+    getRecentAlerts(count = 10) {
+        return this.alertHistory.slice(-count);
+    }
+
+    getAlertsByType(type) {
+        return this.alertHistory.filter(alert => alert.type === type);
+    }
+
+    clearAlerts() {
+        this.alertHistory = [];
     }
 }
 
-export default AlertService; 
+export default new AlertService(); 

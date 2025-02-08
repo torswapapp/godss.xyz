@@ -8,7 +8,13 @@ import {
     CardContent,
     Alert,
     useTheme,
-    useMediaQuery
+    useMediaQuery,
+    Container,
+    Box,
+    Paper,
+    Tab,
+    Tabs,
+    CircularProgress
 } from '@mui/material';
 import PriceMonitorService from '../services/PriceMonitorService';
 import AdvancedAnalyticsService from '../services/AdvancedAnalyticsService';
@@ -26,6 +32,21 @@ import AnimatedCard from './AnimatedCard';
 import AdvancedSettings from './AdvancedSettings';
 import RealTimePriceMonitor from './RealTimePriceMonitor';
 import EnhancedTradeHistory from './EnhancedTradeHistory';
+import ArbitrageSimulator from './ArbitrageSimulator';
+import PriceMonitor from './PriceMonitor';
+import FlashLoanService from '../services/FlashLoanService';
+import MonitoringService from '../services/MonitoringService';
+import PerformanceOptimizer from './PerformanceOptimizer';
+import RiskMetricsVisualization from './RiskMetricsVisualization';
+import AlertNotification from './AlertNotification';
+import NetworkStatusMonitor from './NetworkStatusMonitor';
+import PerformanceMonitor from './PerformanceMonitor';
+import AnalyticsService from '../services/AnalyticsService';
+import PerformanceMonitorService from '../services/PerformanceMonitorService';
+import AlertService from '../services/AlertService';
+import RealTimePerformanceMonitor from './RealTimePerformanceMonitor';
+import PerformanceMetricsChart from './PerformanceMetricsChart';
+import RiskAnalysisDashboard from './RiskAnalysisDashboard';
 
 const TOKEN_ADDRESSES = {
     WETH: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
@@ -78,6 +99,13 @@ const Dashboard = () => {
             bestTrade: 0,
             totalGas: 0
         }
+    });
+    const [flashLoanService] = useState(() => new FlashLoanService(provider));
+    const [activeTab, setActiveTab] = useState(0);
+    const [dashboardData, setDashboardData] = useState({
+        performance: null,
+        risks: null,
+        analytics: null
     });
 
     const theme = useTheme();
@@ -181,6 +209,42 @@ const Dashboard = () => {
         };
     }, [wsService]);
 
+    useEffect(() => {
+        MonitoringService.connect();
+        return () => MonitoringService.disconnect();
+    }, []);
+
+    useEffect(() => {
+        const initializeDashboard = async () => {
+            try {
+                const [performanceReport, analyticsData] = await Promise.all([
+                    PerformanceMonitorService.getPerformanceReport(),
+                    AnalyticsService.getPerformanceMetrics('24h')
+                ]);
+
+                setDashboardData({
+                    performance: performanceReport,
+                    analytics: analyticsData,
+                    risks: {} // Will be populated by RiskAnalysisService
+                });
+                setLoading(false);
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+                AlertService.notify({
+                    type: 'ERROR',
+                    severity: 'error',
+                    title: 'Dashboard Error',
+                    message: 'Failed to initialize dashboard data'
+                });
+            }
+        };
+
+        initializeDashboard();
+        const interval = setInterval(initializeDashboard, 30000); // Update every 30 seconds
+
+        return () => clearInterval(interval);
+    }, []);
+
     const executeArbitrage = async (opportunity) => {
         try {
             setLoading(true);
@@ -227,6 +291,14 @@ const Dashboard = () => {
             ...prev,
             [key]: value
         }));
+    };
+
+    const handleArbitrageExecution = async (params) => {
+        return await flashLoanService.executeFlashLoan(params);
+    };
+
+    const handleTabChange = (event, newValue) => {
+        setActiveTab(newValue);
     };
 
     const renderCurrentView = () => {
@@ -313,43 +385,131 @@ const Dashboard = () => {
         }
     };
 
+    if (loading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+                <CircularProgress />
+            </Box>
+        );
+    }
+
     return (
         <ResponsiveWrapper>
-            {loading ? (
-                <LoadingSpinner />
-            ) : (
-                <LazyMotion features={domAnimation}>
-                    <>
-                        <Typography variant="h4" gutterBottom>
-                            Dashboard
-                        </Typography>
-                        {error && (
-                            <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                            >
-                                <Alert severity="error" sx={{ mb: 2 }}>
-                                    {error}
-                                </Alert>
-                            </motion.div>
-                        )}
-                        
-                        <Grid container spacing={3}>
-                            <Grid item xs={12}>
-                                <RealTimePriceMonitor wsService={wsService} />
-                            </Grid>
-                            <Grid item xs={12}>
-                                <EnhancedTradeHistory trades={trades} />
-                            </Grid>
-                            {renderCurrentView()}
+            <AlertNotification />
+            
+            <Container maxWidth="xl">
+                <Box py={4}>
+                    <Grid container spacing={4}>
+                        <Grid item xs={12}>
+                            <Typography variant="h4" gutterBottom>
+                                Trading Dashboard
+                            </Typography>
                         </Grid>
+                        
+                        <Grid item xs={12} lg={6}>
+                            <PriceMonitor provider={provider} />
+                        </Grid>
+                        
+                        <Grid item xs={12} lg={6}>
+                            <ArbitrageSimulator 
+                                provider={provider}
+                                onExecute={handleArbitrageExecution}
+                            />
+                        </Grid>
+                    </Grid>
+                </Box>
+            </Container>
 
-                        {/* Mobile Navigation */}
-                        <MobileNav onViewChange={setCurrentView} />
-                    </>
-                </LazyMotion>
+            <Box sx={{ mb: 3 }}>
+                <Tabs value={activeTab} onChange={handleTabChange}>
+                    <Tab label="Overview" />
+                    <Tab label="Performance" />
+                    <Tab label="Risk Analysis" />
+                    <Tab label="Network Status" />
+                </Tabs>
+            </Box>
+
+            {/* Overview Tab */}
+            {activeTab === 0 && (
+                <Grid container spacing={3}>
+                    <Grid item xs={12} md={8}>
+                        <Paper sx={{ p: 2, height: '100%' }}>
+                            <PerformanceMonitor 
+                                data={dashboardData.performance}
+                                provider={provider}
+                            />
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                        <Paper sx={{ p: 2, height: '100%' }}>
+                            <RiskMetricsVisualization 
+                                riskData={dashboardData.risks}
+                                historicalRisk={[]}
+                            />
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Paper sx={{ p: 2 }}>
+                            <NetworkStatusMonitor provider={provider} />
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12}>
+                        <RealTimePerformanceMonitor provider={provider} />
+                    </Grid>
+                </Grid>
             )}
+
+            {/* Performance Tab */}
+            {activeTab === 1 && (
+                <Grid container spacing={3}>
+                    <Grid item xs={12}>
+                        <PerformanceOptimizer 
+                            provider={provider}
+                            flashLoanService={flashLoanService}
+                        />
+                    </Grid>
+                    <Grid item xs={12}>
+                        <PerformanceMetricsChart data={dashboardData.analytics} />
+                    </Grid>
+                </Grid>
+            )}
+
+            {/* Risk Analysis Tab */}
+            {activeTab === 2 && (
+                <Grid container spacing={3}>
+                    <Grid item xs={12}>
+                        <RiskAnalysisDashboard 
+                            provider={provider}
+                            flashLoanService={flashLoanService}
+                        />
+                    </Grid>
+                </Grid>
+            )}
+
+            {/* Network Status Tab */}
+            {activeTab === 3 && (
+                <Grid container spacing={3}>
+                    <Grid item xs={12}>
+                        <NetworkStatusMonitor 
+                            provider={provider}
+                            detailed={true}
+                        />
+                    </Grid>
+                </Grid>
+            )}
+
+            <Grid container spacing={3}>
+                <Grid item xs={12}>
+                    <RealTimePriceMonitor wsService={wsService} />
+                </Grid>
+                <Grid item xs={12}>
+                    <EnhancedTradeHistory trades={trades} />
+                </Grid>
+                {renderCurrentView()}
+            </Grid>
+
+            {/* Mobile Navigation */}
+            <MobileNav onViewChange={setCurrentView} />
         </ResponsiveWrapper>
     );
 };
