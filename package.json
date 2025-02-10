@@ -42,12 +42,11 @@
   },
   "scripts": {
     "start": "react-app-rewired start",
-    "build": "CI=false GENERATE_SOURCEMAP=false react-app-rewired build",
+    "build": "CI=false react-app-rewired build",
     "test": "react-app-rewired test",
     "test:ci": "npm run test:all && npm run test:coverage",
     "eject": "react-scripts eject",
     "predeploy": "node scripts/deployment-check.js",
-    "vercel-build": "npm run build",
     "monitor:alerts": "node scripts/monitor-alerts.js",
     "analyze": "source-map-explorer 'build/static/js/*.js'",
     "security-audit": "npm audit",
