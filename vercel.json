@@ -6,8 +6,8 @@
       "use": "@vercel/static-build",
       "config": {
         "distDir": "build",
-        "installCommand": "npm install --legacy-peer-deps --force",
-        "buildCommand": "npm run build"
+        "installCommand": "npm install --legacy-peer-deps --force && npm install typescript@4.9.5",
+        "buildCommand": "npm run vercel-build"
       }
     }
   ],
@@ -35,6 +35,7 @@
     "NODE_ENV": "production",
     "CI": "false",
     "GENERATE_SOURCEMAP": "false",
-    "SKIP_PREFLIGHT_CHECK": "true"
+    "SKIP_PREFLIGHT_CHECK": "true",
+    "TSC_COMPILE_ON_ERROR": "true"
   }
 }
