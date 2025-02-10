@@ -5,6 +5,7 @@ import {
     Tooltip, Slider, Chip
 } from '@mui/material';
 import { formatEther, parseEther } from 'ethers';
+import { useMonitoring } from '../hooks/useMonitoring';
 
 const TOKEN_ADDRESSES = {
     WETH: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
@@ -38,6 +39,7 @@ const ArbitrageSimulator = ({ onExecute, provider }) => {
     const [slippage, setSlippage] = useState(0.5);
     const [opportunities, setOpportunities] = useState([]);
     const [autoExecute, setAutoExecute] = useState(false);
+    const monitoring = useMonitoring();
 
     const setupPriceFeeds = async () => {
         try {
@@ -91,17 +93,30 @@ const ArbitrageSimulator = ({ onExecute, provider }) => {
     const executeArbitrage = async (opportunity) => {
         setLoading(true);
         try {
-            const tx = await onExecute({
+            monitoring.trackTradeAttempt(opportunity);
+            
+            const result = await onExecute({
                 amount: parseEther(tradeAmount),
                 path: opportunity.path,
                 expectedProfit: opportunity.expectedProfit,
                 maxSlippage: slippage,
                 gasPrice: parseEther(gasPrice).toString()
             });
-            await tx.wait();
-            // Update UI with success
+            
+            monitoring.trackTradeSuccess({
+                amount: opportunity.amount,
+                profit: result.profit,
+                gasUsed: result.gasUsed,
+                path: opportunity.path,
+                success: true,
+                executionTime: result.executionTime
+            });
         } catch (error) {
-            setError(error.message);
+            monitoring.trackError(error, {
+                component: 'ArbitrageSimulator',
+                operation: 'executeArbitrage',
+                opportunity
+            });
         } finally {
             setLoading(false);
         }

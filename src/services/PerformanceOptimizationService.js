@@ -1,5 +1,6 @@
 import { formatUnits } from 'ethers';
 import AlertService from './AlertService';
+import monitoringService from './MonitoringService';
 
 class PerformanceOptimizationService {
     constructor() {
@@ -14,29 +15,29 @@ class PerformanceOptimizationService {
 
     async optimizeGasPrice(provider, baseGasPrice) {
         try {
-            const block = await provider.getBlock('latest');
-            const baseFeePerGas = formatUnits(block.baseFeePerGas, 'gwei');
-            const networkCongestion = block.gasUsed / block.gasLimit;
+            const metrics = await this.getNetworkMetrics(provider);
+            
+            // Track the optimization attempt
+            monitoringService.trackPerformance({
+                gasPrice: baseGasPrice,
+                networkCongestion: metrics.congestion,
+                blockTime: metrics.blockTime
+            });
 
             // Calculate optimal gas price based on network conditions
-            let optimalGasPrice = parseFloat(baseFeePerGas);
-            
-            if (networkCongestion > 0.8) {
-                optimalGasPrice *= 1.2; // Add 20% during high congestion
-            } else if (networkCongestion > 0.5) {
-                optimalGasPrice *= 1.1; // Add 10% during medium congestion
-            }
-
-            // Ensure gas price is within acceptable range
-            optimalGasPrice = Math.min(
-                Math.max(optimalGasPrice, baseGasPrice),
-                this.performanceThresholds.maxGasPrice
+            const optimizedGasPrice = this.calculateOptimalGasPrice(
+                baseGasPrice,
+                metrics.congestion,
+                metrics.blockTime
             );
 
-            return optimalGasPrice;
+            return optimizedGasPrice;
         } catch (error) {
-            console.error('Error optimizing gas price:', error);
-            return baseGasPrice;
+            monitoringService.logError(error, {
+                service: 'PerformanceOptimizationService',
+                method: 'optimizeGasPrice'
+            });
+            return baseGasPrice; // Fallback to base gas price
         }
     }
 
@@ -168,6 +169,16 @@ class PerformanceOptimizationService {
     async simulateTradePath(path, amount) {
         // Implementation for simulating trade execution
         return { efficiency: 0, expectedOutput: 0 };
+    }
+
+    calculateOptimalGasPrice(baseGasPrice, congestion, blockTime) {
+        // Implementation of calculateOptimalGasPrice method
+        // This method should return the optimized gas price based on the given parameters
+    }
+
+    getNetworkMetrics(provider) {
+        // Implementation of getNetworkMetrics method
+        // This method should return an object containing network metrics
     }
 }
 

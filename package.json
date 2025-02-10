@@ -38,10 +38,11 @@
     "start": "react-app-rewired start",
     "build": "react-app-rewired build",
     "build:production": "GENERATE_SOURCEMAP=false react-app-rewired build",
-    "test": "react-scripts test",
+    "test": "react-app-rewired test",
     "test:ci": "npm run test:all && npm run test:coverage",
     "eject": "react-scripts eject",
-    "vercel-build": "npm run build:production",
+    "predeploy": "node scripts/deployment-check.js",
+    "vercel-build": "npm run predeploy && npm run build",
     "monitor:alerts": "node scripts/monitor-alerts.js",
     "analyze": "source-map-explorer 'build/static/js/*.js'",
     "security-audit": "npm audit",
@@ -53,7 +54,9 @@
     "test:integration": "react-scripts test --testPathPattern=src/__tests__/integration",
     "test:e2e": "cypress run",
     "test:coverage": "react-scripts test --coverage --watchAll=false",
-    "test:watch": "react-scripts test --watch"
+    "test:watch": "react-scripts test --watch",
+    "rollback": "node scripts/rollback.js",
+    "backup-state": "node scripts/backup-state.js"
   },
   "eslintConfig": {
     "extends": [

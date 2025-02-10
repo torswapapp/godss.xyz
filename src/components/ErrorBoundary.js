@@ -1,35 +1,46 @@
 import React from 'react';
-import { Alert, Button, Box, Typography } from '@mui/material';
+import { Alert, Button, Card, CardContent, Typography } from '@mui/material';
+import monitoringService from '../services/MonitoringService';
 
 class ErrorBoundary extends React.Component {
-    state = { hasError: false, error: null };
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
 
     static getDerivedStateFromError(error) {
         return { hasError: true, error };
     }
 
     componentDidCatch(error, errorInfo) {
-        console.error('Error caught by boundary:', error, errorInfo);
+        monitoringService.logError(error, {
+            component: 'ErrorBoundary',
+            errorInfo
+        });
     }
 
     render() {
         if (this.state.hasError) {
             return (
-                <Box p={3}>
-                    <Alert severity="error">
-                        <Typography variant="h6">Something went wrong</Typography>
-                        <Typography>{this.state.error.message}</Typography>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h5" color="error">
+                            Something went wrong
+                        </Typography>
+                        <Alert severity="error" sx={{ my: 2 }}>
+                            {this.state.error?.message || 'An unexpected error occurred'}
+                        </Alert>
                         <Button 
+                            variant="contained" 
                             onClick={() => window.location.reload()}
-                            variant="contained"
-                            sx={{ mt: 2 }}
                         >
-                            Reload Page
+                            Reload Application
                         </Button>
-                    </Alert>
-                </Box>
+                    </CardContent>
+                </Card>
             );
         }
+
         return this.props.children;
     }
 }

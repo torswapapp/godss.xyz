@@ -7,6 +7,7 @@ import {
 import { formatEther } from 'ethers';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import NetworkMetricsService from '../services/NetworkMetricsService';
+import { useMonitoring } from '../hooks/useMonitoring';
 
 const NetworkStatusMonitor = ({ provider }) => {
     const [networkStatus, setNetworkStatus] = useState({
@@ -24,6 +25,7 @@ const NetworkStatusMonitor = ({ provider }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [metricsService] = useState(() => new NetworkMetricsService(provider));
+    const monitoring = useMonitoring();
 
     useEffect(() => {
         const monitorNetwork = async () => {
@@ -69,6 +71,23 @@ const NetworkStatusMonitor = ({ provider }) => {
 
         return () => clearInterval(interval);
     }, [provider, metricsService]);
+
+    useEffect(() => {
+        const trackNetworkMetrics = async () => {
+            const blockNumber = await provider.getBlockNumber();
+            const gasPrice = await provider.getGasPrice();
+            const block = await provider.getBlock('latest');
+            
+            monitoring.trackNetworkChange({
+                blockNumber,
+                gasPrice: gasPrice.toString(),
+                congestion: (block.gasUsed / block.gasLimit) * 100
+            });
+        };
+
+        const interval = setInterval(trackNetworkMetrics, 10000); // Every 10 seconds
+        return () => clearInterval(interval);
+    }, [provider, monitoring]);
 
     const getStatusColor = (status) => {
         switch (status) {

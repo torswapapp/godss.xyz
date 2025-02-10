@@ -47,6 +47,7 @@ import AlertService from '../services/AlertService';
 import RealTimePerformanceMonitor from './RealTimePerformanceMonitor';
 import PerformanceMetricsChart from './PerformanceMetricsChart';
 import RiskAnalysisDashboard from './RiskAnalysisDashboard';
+import MonitoringControls from './MonitoringControls';
 
 const TOKEN_ADDRESSES = {
     WETH: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
@@ -506,6 +507,10 @@ const Dashboard = () => {
                     <EnhancedTradeHistory trades={trades} />
                 </Grid>
                 {renderCurrentView()}
+            </Grid>
+
+            <Grid item xs={12}>
+                <MonitoringControls />
             </Grid>
 
             {/* Mobile Navigation */}
