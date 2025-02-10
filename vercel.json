@@ -4,7 +4,10 @@
     {
       "src": "package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "build" }
+      "config": {
+        "distDir": "build",
+        "installCommand": "npm install --legacy-peer-deps"
+      }
     }
   ],
   "routes": [
@@ -26,5 +29,9 @@
       "headers": { "cache-control": "public, max-age=0, must-revalidate" },
       "dest": "/index.html"
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "CI": "false"
+  }
 }

@@ -42,7 +42,7 @@
     "test:ci": "npm run test:all && npm run test:coverage",
     "eject": "react-scripts eject",
     "predeploy": "node scripts/deployment-check.js",
-    "vercel-build": "npm run predeploy && npm run build",
+    "vercel-build": "node scripts/build-env.js && npm run predeploy && CI=false npm run build",
     "monitor:alerts": "node scripts/monitor-alerts.js",
     "analyze": "source-map-explorer 'build/static/js/*.js'",
     "security-audit": "npm audit",
