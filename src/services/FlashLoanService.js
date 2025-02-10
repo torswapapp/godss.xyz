@@ -3,7 +3,7 @@ import {
     formatEther, 
     parseEther, 
 } from 'ethers';
-import AAVE_POOL_ABI from '../constants/aavePoolAbi';
+import { AAVE_POOL_ABI } from '../constants/aavePoolAbi';
 import ARBITRAGE_ABI from '../constants/arbitrageAbi';
 
 const AAVE_ADDRESSES = {

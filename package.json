@@ -50,7 +50,7 @@
     "test:ci": "npm run test:all && npm run test:coverage",
     "eject": "react-scripts eject",
     "predeploy": "node scripts/deployment-check.js",
-    "vercel-build": "node scripts/build-env.js && npm run predeploy && CI=false SKIP_PREFLIGHT_CHECK=true TSC_COMPILE_ON_ERROR=true NODE_OPTIONS=--max_old_space_size=4096 react-app-rewired build",
+    "vercel-build": "npm run build",
     "monitor:alerts": "node scripts/monitor-alerts.js",
     "analyze": "source-map-explorer 'build/static/js/*.js'",
     "security-audit": "npm audit",
