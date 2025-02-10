@@ -1,21 +1,9 @@
-import { init as initApm } from '@elastic/apm-rum';
 import { reportWebVitals } from 'web-vitals';
 
 class PerformanceMonitor {
     constructor() {
         this.metrics = new Map();
-        this.initializeApm();
         this.setupWebVitals();
-    }
-
-    initializeApm() {
-        if (process.env.NODE_ENV === 'production') {
-            initApm({
-                serviceName: 'flashloan-dashboard',
-                serverUrl: process.env.REACT_APP_APM_SERVER,
-                environment: process.env.NODE_ENV
-            });
-        }
     }
 
     setupWebVitals() {
@@ -31,8 +19,13 @@ class PerformanceMonitor {
         });
 
         if (process.env.NODE_ENV === 'production') {
-            // Send to monitoring service
+            // Send to monitoring service if needed
+            console.log('Performance metric:', { name, value, id });
         }
+    }
+
+    getMetrics() {
+        return Object.fromEntries(this.metrics);
     }
 }
 
