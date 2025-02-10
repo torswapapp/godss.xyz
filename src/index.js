@@ -3,13 +3,11 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import * as serviceWorker from './serviceWorker';
-import ProductionOptimizer from './services/ProductionOptimizer';
-import monitoringService from './services/MonitoringService';
+import PerformanceMonitor from './services/PerformanceMonitor';
 
 // Initialize monitoring
 if (process.env.NODE_ENV === 'production') {
-  monitoringService.initialize();
+  PerformanceMonitor.initialize();
 }
 
 ReactDOM.render(
@@ -23,9 +21,3 @@ ReactDOM.render(
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
-
-// Initialize production optimizations
-if (process.env.NODE_ENV === 'production') {
-  ProductionOptimizer.initialize();
-  serviceWorker.register();
-}
